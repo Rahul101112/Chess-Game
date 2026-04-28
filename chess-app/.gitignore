@@ -33,3 +33,4 @@ backend/target/
 # Jenkins
 workspace/
 .jenkinsinsights/
+/jenkins-testing/*
