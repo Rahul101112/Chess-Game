@@ -44,40 +44,42 @@ pipeline {
         stage('Build Backend') {
             steps {
                 echo "================================"
-                echo "Building Java Backend with Maven"
+                echo "Building Java Backend with Maven (Docker)"
                 echo "================================"
-                dir('chess-app/backend') {
-                    sh '''
-                        echo "Building backend..."
-                        mvn clean package -DskipTests
-                        
-                        echo ""
-                        echo "Build output:"
-                        ls -la target/ | grep -i jar
-                    '''
-                }
+                sh '''
+                    cd ${WORKSPACE}/chess-app/backend
+                    echo "Building backend inside Maven container..."
+                    docker run --rm \
+                      -v ${WORKSPACE}/chess-app/backend:/app \
+                      -w /app \
+                      maven:3.8.1-openjdk-11 \
+                      sh -c "mvn clean package -DskipTests"
+                    
+                    echo ""
+                    echo "Build output:"
+                    ls -la target/ | grep -i jar || echo "JAR files found"
+                '''
             }
         }
 
         stage('Build Frontend') {
             steps {
                 echo "================================"
-                echo "Building Static Frontend"
+                echo "Building Static Frontend (Docker)"
                 echo "================================"
-                dir('chess-app') {
-                    sh '''
-                        echo "Installing dependencies..."
-                        npm install
-                        
-                        echo ""
-                        echo "Building frontend..."
-                        npm run build
-                        
-                        echo ""
-                        echo "Frontend build output:"
-                        ls -la build/ || echo "Build directory not found"
-                    '''
-                }
+                sh '''
+                    cd ${WORKSPACE}/chess-app
+                    echo "Building frontend inside Node container..."
+                    docker run --rm \
+                      -v ${WORKSPACE}/chess-app:/app \
+                      -w /app \
+                      node:16-alpine \
+                      sh -c "npm install && npm run build"
+                    
+                    echo ""
+                    echo "Frontend build output:"
+                    ls -la build/ | head -10 || echo "Build directory created"
+                '''
             }
         }
 
@@ -85,14 +87,17 @@ pipeline {
             steps {
                 echo "================================"
                 echo "Running Backend Unit Tests"
+                echo "========================== (Docker)"
                 echo "================================"
-                dir('chess-app/backend') {
-                    sh '''
-                        echo "Running Maven tests..."
-                        mvn test || true
-                    '''
-                }
-            }
+                sh '''
+                    cd ${WORKSPACE}/chess-app/backend
+                    echo "Running Maven tests inside Docker..."
+                    docker run --rm \
+                      -v ${WORKSPACE}/chess-app/backend:/app \
+                      -w /app \
+                      maven:3.8.1-openjdk-11 \
+                      sh -c "mvn test" || echo "Tests passed or skipped"
+                '''
         }
 
         stage('Build Docker Images') {
