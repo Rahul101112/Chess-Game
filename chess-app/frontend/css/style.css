@@ -1,0 +1,48 @@
+:root {
+    /* Classic Theme Defaults */
+    --light-square: #f0d9b5;
+    --dark-square: #b58863;
+    --bg-color: #2c2c2c;
+    --text-color: #ffffff;
+}
+
+[data-theme="modern"] {
+    --light-square: #eaebed;
+    --dark-square: #4b7399;
+    --bg-color: #121212;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#chessboard {
+    display: grid;
+    grid-template-columns: repeat(8, 80px);
+    grid-template-rows: repeat(8, 80px);
+    border: 4px solid #333;
+    margin-top: 20px;
+}
+
+.square {
+    width: 80px;
+    height: 80px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.square.light { background-color: var(--light-square); }
+.square.dark { background-color: var(--dark-square); }
+
+.piece {
+    width: 90%;
+    height: 90%;
+    cursor: pointer;
+    /* Use vector SVGs for crisp HD rendering */
+}
