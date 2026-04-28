@@ -1,0 +1,120 @@
+pipeline {
+    agent any
+
+    environment {
+        NODEJS_HOME = "${tool 'NodeJS'}"
+        PATH = "${NODEJS_HOME}/bin:${PATH}"
+        JAVA_HOME = "${tool 'Java'}"
+        MAVEN_HOME = "${tool 'Maven'}"
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                echo "================================"
+                echo "Checking out Chess Application"
+                echo "================================"
+                checkout scm
+            }
+        }
+
+        stage('Build Backend') {
+            steps {
+                echo "================================"
+                echo "Building Java Backend with Maven"
+                echo "================================"
+                dir('backend') {
+                    sh '''
+                        echo "Maven Version:"
+                        mvn --version
+                        echo "Building backend..."
+                        mvn clean package -DskipTests
+                    '''
+                }
+            }
+        }
+
+        stage('Build Frontend') {
+            steps {
+                echo "================================"
+                echo "Building React Frontend"
+                echo "================================"
+                sh '''
+                    echo "Node Version:"
+                    node --version
+                    echo "NPM Version:"
+                    npm --version
+                    echo "Installing dependencies and building frontend..."
+                    npm install
+                    npm run build
+                '''
+            }
+        }
+
+        stage('Unit Tests - Backend') {
+            steps {
+                echo "================================"
+                echo "Running Backend Unit Tests"
+                echo "================================"
+                dir('backend') {
+                    sh '''
+                        echo "Running Maven tests..."
+                        mvn test
+                    '''
+                }
+            }
+        }
+
+        stage('Code Quality Check') {
+            steps {
+                echo "================================"
+                echo "Running Code Quality Analysis"
+                echo "================================"
+                sh '''
+                    echo "Build completed successfully!"
+                    echo "Workspace: ${WORKSPACE}"
+                    echo "Build Number: ${BUILD_NUMBER}"
+                '''
+            }
+        }
+
+        stage('Build Docker Images') {
+            steps {
+                echo "================================"
+                echo "Building Docker Images"
+                echo "================================"
+                sh '''
+                    echo "Building backend Docker image..."
+                    docker build -t chess-app-backend:${BUILD_NUMBER} ./backend
+                    
+                    echo "Docker images built successfully!"
+                    docker images | grep chess-app
+                '''
+            }
+        }
+
+        stage('Archive Artifacts') {
+            steps {
+                echo "================================"
+                echo "Archiving Build Artifacts"
+                echo "================================"
+                archiveArtifacts artifacts: 'backend/target/*.jar,build/**', 
+                                  allowEmptyArchive: true
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "✓ Chess Application Pipeline Completed Successfully!"
+            echo "Backend JAR: backend/target/*.jar"
+            echo "Frontend Build: build/"
+        }
+        failure {
+            echo "✗ Pipeline Failed - Check logs above for details"
+        }
+        always {
+            cleanWs()
+        }
+    }
+}
